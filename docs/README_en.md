@@ -1,19 +1,22 @@
 <h1 align="center">AITuber Kit</h1>
 
 <p align="center">
-  <img style="max-width: 100%;" src="https://github.com/tegnike/nike-ChatVRM/assets/35606144/04e073de-ef99-4585-8bfa-aaf936409e79">
+  <img style="max-width: 100%;" src="https://github.com/tegnike/aituber-kit/assets/35606144/04e073de-ef99-4585-8bfa-aaf936409e79">
 </p>
 
 <p align="center">
-   <a href="https://github.com/tegnike/nike-ChatVRM"><img alt="GitHub Last Commit" src="https://img.shields.io/github/last-commit/tegnike/nike-ChatVRM"></a>
-   <a href="https://github.com/tegnike/nike-ChatVRM"><img alt="GitHub Top Language" src="https://img.shields.io/github/languages/top/tegnike/nike-ChatVRM"></a>
-   <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/tegnike/nike-ChatVRM?sort=semver&color=orange">
+   <a href="https://github.com/tegnike/aituber-kit"><img alt="GitHub Last Commit" src="https://img.shields.io/github/last-commit/tegnike/aituber-kit"></a>
+   <a href="https://github.com/tegnike/aituber-kit"><img alt="GitHub Top Language" src="https://img.shields.io/github/languages/top/tegnike/aituber-kit"></a>
+   <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/tegnike/aituber-kit?sort=semver&color=orange">
+   <a href="https://discord.gg/T96PTvrs"><img alt="Discord" src="https://img.shields.io/badge/Discord-AITuberKit-7289DA?logo=discord&style=flat&logoColor=white"/></a>
 </p>
 
 <h3 align="center">
-   <a href="./README.md">【Japanese】</a>
-   <a href="./zh_README.md">【Chinese】</a>
+   <a href="../README.md">【Japanese】</a>｜
+   <a href="./README_zh.md">【Chinese】</a>｜
+   <a href="./README_ko.md">【Korean】</a>
 </h3>
+
 ## Overview
 
 This repository has the following 3 features:
@@ -24,7 +27,7 @@ This repository has the following 3 features:
 
 I've written a detailed usage guide in the article below:
 
-[![You are AITuber Developer from Today | Nike-chan](https://github.com/tegnike/nike-ChatVRM/assets/35606144/a958f505-72f9-4665-ab6c-b57b692bb166)](https://note.com/nike_cha_n/n/ne98acb25e00f)
+[![You are AITuber Developer from Today | Nike-chan](https://github.com/tegnike/aituber-kit/assets/35606144/a958f505-72f9-4665-ab6c-b57b692bb166)](https://note.com/nike_cha_n/n/ne98acb25e00f)
 
 ### Common Preparations
 
@@ -46,7 +49,7 @@ npm run dev
 - This is a feature to converse with an AI character.
 - It is a feature of [pixiv/ChatVRM](https://github.com/pixiv/ChatVRM), which is the basis of this repository.
 - It can be tried relatively easily as long as you have an API key for various LLMs.
-- The last 10 conversation sentences are retained as memory. (The number can be specified in future updates)
+- The recent 10 conversation sentences are retained as memory. (The number can be specified in future updates)
 
 ### Usage
 
@@ -64,6 +67,7 @@ npm run dev
    - For Koeiromap, you can finely adjust the voice. An API key is required.
    - For Google TTS, languages other than Japanese can also be selected. Credential information is required.
    - For Style-Bert-VITS2, a local API server needs to be running.
+   - For GSVI TTS, a local API server needs to be running.
 5. Start conversing with the character from the input form. Microphone input is also possible.
 
 ## AITuber Streaming
@@ -94,7 +98,7 @@ npm run dev
 
 ### Related
 
-- You can try it with the server app repository I created. [tegnike/nike-open-interpreter](https://github.com/tegnike/nike-open-interpreter)
+- You can try it with the server app repository I created. [tegnike/aituber-server](https://github.com/tegnike/aituber-server)
 - For detailed settings, please read "[Let's develop with a beautiful girl!! [Open Interpreter]](https://note.com/nike_cha_n/n/nabcfeb7aaf3f)".
 
 ## TIPS
@@ -104,14 +108,18 @@ npm run dev
 - Change the VRM model data at `public/AvatarSample_B.vrm`. Do not change the name.
 - Change the background image at `public/bg-c.jpg`. Do not change the name.
 
-## Other
+### Setting Environment Variables
 
-- The license adheres to [pixiv/ChatVRM](https://github.com/pixiv/ChatVRM).
-- Language settings support Japanese, English, and Traditional Chinese. You can switch in the settings screen.
+- Some configuration values can be referenced from the `.env` file contents.
+- If entered in the settings screen, that value takes precedence.
+
+### Other
+
 - Conversation history can be reset in the settings screen.
 - Various settings are stored in the browser.
 
 ## Usage Agreement
 
-- [Logo Usage Agreement](./docs/logo_licence_en.md)
-- [VRM Model Usage Agreement](./docs/vrm_licence_en.md)
+- The license adheres to [pixiv/ChatVRM](https://github.com/pixiv/ChatVRM) and is under the MIT License.
+- [Logo Usage Agreement](./logo_licence_en.md)
+- [VRM Model Usage Agreement](./vrm_licence_en.md)

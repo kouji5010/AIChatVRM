@@ -34,7 +34,7 @@ export const Introduction = ({
     console.log('i18n.language', i18n.language);
     // selectLanguage: "JP"
     let languageCode = i18n.language.toUpperCase();
-    languageCode == "JA" ? "JP" : languageCode
+    languageCode = languageCode == "JA" ? "JP" : languageCode
     setSelectLanguage(languageCode);
     setSelectVoiceLanguage(getVoiceLanguageCode(languageCode));
   }
@@ -49,6 +49,8 @@ export const Introduction = ({
         return 'zh-TW';
       case 'zh-TW':
         return 'zh-TW';
+      case 'KO':
+        return 'ko-KR';
       default:
         return 'ja-JP';
     }
@@ -115,8 +117,8 @@ export const Introduction = ({
             <br />
             {t('RepositoryURL')}<span> </span>
             <Link
-              url={"https://github.com/tegnike/nike-ChatVRM"}
-              label={"https://github.com/tegnike/nike-ChatVRM"}
+              url={"https://github.com/tegnike/aituber-kit"}
+              label={"https://github.com/tegnike/aituber-kit"}
             />
           </div>
         </div>
