@@ -34,6 +34,8 @@ type Props = {
   onChangeDifyKey: (event: React.ChangeEvent<HTMLInputElement>) => void;
   difyUrl: string;
   onChangeDifyUrl: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  difyConversationId: string;
+  onChangeDifyConversationId: (id: string) => void;
   systemPrompt: string;
   chatLog: Message[];
   codeLog: Message[];
@@ -84,6 +86,10 @@ type Props = {
   onChangeGVITtsBatchSize: (event: React.ChangeEvent<HTMLInputElement>) => void;
   gsviTtsSpeechRate: number;
   onChangeGSVITtsSpeechRate: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  characterName: string;
+  onChangeCharacterName: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  showCharacterName: boolean;
+  onChangeShowCharacterName: (show: boolean) => void;
 };
 export const Settings = ({
   selectAIService,
@@ -104,6 +110,8 @@ export const Settings = ({
   onChangeDifyKey,
   difyUrl,
   onChangeDifyUrl,
+  difyConversationId,
+  onChangeDifyConversationId,
   chatLog,
   systemPrompt,
   koeiroParam,
@@ -153,6 +161,10 @@ export const Settings = ({
   onChangeGVITtsBatchSize,
   gsviTtsSpeechRate,
   onChangeGSVITtsSpeechRate,
+  characterName,
+  onChangeCharacterName,
+  showCharacterName,
+  onChangeShowCharacterName,
 }: Props) => {
   const { t } = useTranslation();
 
@@ -245,6 +257,27 @@ export const Settings = ({
                 <option value="ZH">繁體中文 - Traditional Chinese</option>
                 <option value="KO">韓語 - Korean</option>
               </select>
+            </div>
+          </div>
+          {/* キャラクター名表示 */}
+          <div className="my-40">
+            <div className="my-16 typography-20 font-bold">
+              {t('CharacterName')}
+            </div>
+            <input
+              className="text-ellipsis px-16 py-8 w-col-span-2 bg-surface1 hover:bg-surface1-hover rounded-8"
+              type="text"
+              placeholder={t('CharacterName')}
+              value={characterName}
+              onChange={onChangeCharacterName}
+            />
+            <div className="my-16 typography-20 font-bold">
+              {t('ShowCharacterName')}
+            </div>
+            <div className="my-8">
+              <TextButton onClick={() => onChangeShowCharacterName(!showCharacterName)}>
+                {showCharacterName ? t('StatusOn') : t('StatusOff')}
+              </TextButton>
             </div>
           </div>
           {/* VRMと背景画像の設定 */}
@@ -363,6 +396,7 @@ export const Settings = ({
                                 onChange={(e) => setSelectAIModel(e.target.value)}
                               >
                                 <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
+                                <option value="claude-3-5-sonnet-20240620">claude-3.5-sonnet-20240620</option>
                                 <option value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                                 <option value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
                               </select>
@@ -460,8 +494,7 @@ export const Settings = ({
                         return (
                           <div className="my-24">
                             <div className="my-16">
-                              {t('DifyInfo')}<br />
-                              {t('DifyInfo2')}
+                              {t('DifyInfo')}
                             </div>
                             <div className="my-16 typography-20 font-bold">{t('DifyAPIKeyLabel')}</div>
                             <input
@@ -809,20 +842,22 @@ export const Settings = ({
             })()}
           </div>
           {/* チャットログの設定 */}
-          {chatLog.length > 0 && (
-            <div className="my-40">
-              <div className="my-8 grid-cols-2">
-                <div className="my-16 typography-20 font-bold">{t('ConversationHistory')}</div>
-                <div className="my-8">
-                  {t('ConversationHistoryInfo')}
-                </div>
-                <TextButton onClick={() => { 
-                  onClickResetChatLog();
-                  onClickResetCodeLog(); 
-                }}>
-                  {t('ConversationHistoryReset')}
-                </TextButton>
+          <div className="my-40">
+            <div className="my-8 grid-cols-2">
+              <div className="my-16 typography-20 font-bold">{t('ConversationHistory')}</div>
+              <div className="my-8">
+                {selectAIService !== "dify" ? t('ConversationHistoryInfo') : t('DifyInfo2')}
               </div>
+              <TextButton onClick={() => {
+                onClickResetChatLog();
+                onClickResetCodeLog();
+                onChangeDifyConversationId("");
+              }}>
+                {t('ConversationHistoryReset')}
+              </TextButton>
+            </div>
+
+            {chatLog.length > 0 && (
               <div className="my-8">
                 {chatLog.map((value, index) => {
                   return (
@@ -847,8 +882,8 @@ export const Settings = ({
                   );
                 })}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

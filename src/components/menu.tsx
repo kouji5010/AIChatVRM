@@ -29,6 +29,8 @@ type Props = {
   onChangeDifyKey: (key: string) => void;
   difyUrl: string;
   onChangeDifyUrl: (url: string) => void;
+  difyConversationId: string;
+  onChangeDifyConversationId: (id: string) => void;
   systemPrompt: string;
   chatLog: Message[];
   codeLog: Message[];
@@ -77,6 +79,10 @@ type Props = {
   onChangeGVITtsBatchSize: (speed: number) => void;
   gsviTtsSpeechRate: number;
   onChangeGSVITtsSpeechRate: (speed: number) => void;
+  characterName: string;
+  onChangeCharacterName: (key: string) => void;
+  showCharacterName: boolean;
+  onChangeShowCharacterName: (show: boolean) => void;
 };
 export const Menu = ({
   selectAIService,
@@ -97,6 +103,8 @@ export const Menu = ({
   onChangeDifyKey,
   difyUrl,
   onChangeDifyUrl,
+  difyConversationId,
+  onChangeDifyConversationId,
   systemPrompt,
   chatLog,
   codeLog,
@@ -145,6 +153,10 @@ export const Menu = ({
   onChangeGVITtsBatchSize,
   gsviTtsSpeechRate,
   onChangeGSVITtsSpeechRate,
+  characterName,
+  onChangeCharacterName,
+  showCharacterName,
+  onChangeShowCharacterName,
 }: Props) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showChatLog, setShowChatLog] = useState(false);
@@ -217,6 +229,13 @@ export const Menu = ({
       onChangeDifyUrl(event.target.value);
     },
     [onChangeDifyUrl]
+  );
+
+  const handleDifyConversationIdChange = useCallback(
+    (value: string) => {
+      onChangeDifyConversationId(value);
+    },
+    [onChangeDifyConversationId]
   );
 
   const handleChangeKoeiromapKey = useCallback(
@@ -374,6 +393,20 @@ export const Menu = ({
     [onChangeGSVITtsSpeechRate]
   );
 
+  const handleCharacterName = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      onChangeCharacterName(event.target.value);
+    },
+    [onChangeCharacterName]
+  );
+
+  const handleShowCharacterName = useCallback(
+    (show: boolean) => {
+      onChangeShowCharacterName(show);
+    },
+    [onChangeShowCharacterName]
+  );
+
   return (
     <>
       <div className="absolute z-10 m-24">
@@ -404,7 +437,7 @@ export const Menu = ({
       {
         webSocketMode ? 
           (showChatLog && <CodeLog messages={codeLog} />) :
-          (showChatLog && <ChatLog messages={chatLog} />)
+          (showChatLog && <ChatLog messages={chatLog} characterName={characterName} />)
       }
       {showSettings && (
         <Settings
@@ -426,6 +459,8 @@ export const Menu = ({
           onChangeLocalLlmUrl={handleChangeLocalLlmUrl}
           difyUrl={difyUrl}
           onChangeDifyUrl={handleDifyUrlChange}
+          difyConversationId={difyConversationId}
+          onChangeDifyConversationId={handleDifyConversationIdChange}
           chatLog={chatLog}
           codeLog={codeLog}
           systemPrompt={systemPrompt}
@@ -476,10 +511,14 @@ export const Menu = ({
           onChangeGVITtsBatchSize={handleChangeGSVITtsBatchSize}
           gsviTtsSpeechRate={gsviTtsSpeechRate}
           onChangeGSVITtsSpeechRate={handleChangeGSVITtsSpeechRate}
+          characterName={characterName}
+          onChangeCharacterName={handleCharacterName}
+          showCharacterName={showCharacterName}
+          onChangeShowCharacterName={handleShowCharacterName}
         />
       )}
       {!showChatLog && assistantMessage && (
-        <AssistantText message={assistantMessage} />
+        <AssistantText message={assistantMessage} characterName={characterName} showCharacterName ={showCharacterName} />
       )}
       <input
         type="file"
