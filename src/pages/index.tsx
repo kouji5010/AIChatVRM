@@ -23,6 +23,7 @@ import "@/lib/i18n";
 import { useTranslation } from 'react-i18next';
 import { fetchAndProcessComments } from "@/features/youtube/youtubeComments";
 import { buildUrl } from "@/utils/buildUrl";
+import { Client } from 'paho-mqtt';
 
 export default function Home() {
   const { viewer } = useContext(ViewerContext);
@@ -73,6 +74,134 @@ export default function Home() {
   const [youtubeSleepMode, setYoutubeSleepMode] = useState(false);
   const [chatProcessingCount, setChatProcessingCount] = useState(0);
 
+  const [mqttMode, setMqttMode] = useState(false);
+  const [mqttServerUrl, setMqttServerUrl] = useState(process.env.NEXT_PUBLIC_MQTT_URL && process.env.NEXT_PUBLIC_MQTT_URL !== "" ? process.env.NEXT_PUBLIC_MQTT_URL : "wss://127.0.0.1:9001/mqtt");
+  //const [topics, setTopics] = useState(process.env.NEXT_PUBLIC_MQTT_TOPIC && process.env.NEXT_PUBLIC_MQTT_TOPIC !== "" ? process.env.NEXT_PUBLIC_MQTT_TOPIC : "test");
+  const [topics, setTopics] = useState<string[]>(["test"]);
+  const [previousTopics, setPreviousTopics] = useState<string[]>([]);
+  const clientRef = useRef<Client | null>(null);
+  const topicsRef = useRef<string[]>(["test"]);
+  const isLocalStorageLoadedRef = useRef(false);
+
+    useEffect(() => {
+    const clientId = 'ClientID'+ Date.now();  // ユニークなクライアントIDを指定してください
+    //const brokerHost = '192.168.1.115'; // あなたのドメインまたはMQTTブローカーのIPアドレスを指定してください
+    const brokerHost = '86e7cb7ed99489e0.webgate-biz.scorer.jp'; // あなたのドメインまたはMQTTブローカーのIPアドレスを指定してください
+    const brokerPort = 9001; // あなたがSSL/TLSを使用してMosquittoを設定したポート番号
+
+    //const brokerUrl = `wss://${brokerHost}:${brokerPort}/mqtt`; // このパスは、MosquittoのWebSocket設定に合わせて変更してください
+    //const brokerUrl = `wss://${brokerHost}/mqtt`; // このパスは、MosquittoのWebSocket設定に合わせて変更してください
+    const brokerUrl = mqttServerUrl;
+    //const client = new Client(brokerUrl, clientId);
+    clientRef.current = new Client(brokerUrl, clientId);
+    
+    clientRef.current.onConnectionLost = (responseObject) => {
+        if (responseObject.errorCode !== 0) {
+            console.log(`MQTT connection lost: ${responseObject.errorMessage}`);
+        }
+    };
+      
+    clientRef.current.onMessageArrived = (message) => {
+        console.log(`MQTT recived: ${message.payloadString}`);
+        //handleSendChat(message.payloadString);
+        const text = message.payloadString;
+        if (text === "start_conversation") {
+          setIsConversationActive(true);
+        } else if (text === "stop_conversation") {
+          setIsConversationActive(false);
+        } else if (text === "wake") {
+          setRecognitionTrigger(prev => prev + 1);
+        } else {
+          const newMessage = { role: 'assistant', content: text };
+          setChatLog(chatLog => [...chatLog, newMessage]);
+          const aiText = text;
+          const aiTalks = textsToScreenplay([aiText], koeiroParam);
+          handleSpeakAi(aiTalks[0], setAssistantMessage(text));
+          //setAssistantMessage(text));
+        }
+    };
+
+    clientRef.current.connect({
+      onSuccess: () => {
+        console.log('MQTT client connected', topicsRef.current);
+
+        // localStorageからの読み込みが完了していれば、その時点でのtopicsの値を使用して購読処理を行う
+        if (isLocalStorageLoadedRef.current) {
+          topicsRef.current.forEach(topic => {
+            if (clientRef.current &&  topic != "") {
+              console.log("subscribe: ", topic);
+              clientRef.current.subscribe(topic);
+            }
+          });
+        }
+      },
+      onFailure: (error) => {
+          console.log('MQTT connection failed: ' + error.errorMessage);
+      },
+      keepAliveInterval: 30 // キープアライブの間隔を30秒に設定
+    });
+
+    return () => {
+      if (clientRef.current) {
+          clientRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // topicsの初期値をlocalStorageから取得して更新
+    if(window.localStorage.getItem("topics")){
+      const stored = localStorage.getItem('topics');
+      if (stored) {
+        const loadedTopics = stored.split(',').map(topic => topic.trim());
+        if (JSON.stringify(loadedTopics) !== JSON.stringify(topics)) {
+          setTopics(loadedTopics);
+          topicsRef.current = loadedTopics;  // ここでtopicsRefを更新
+        }
+        setPreviousTopics(loadedTopics);
+        isLocalStorageLoadedRef.current = true;
+      }
+    }
+  }, []);
+    
+  useEffect(() => {
+    // topicsの変更を検知して、購読の追加・解除を行う
+    const addedTopics = topics.filter(topic => !previousTopics.includes(topic));
+    const removedTopics = previousTopics.filter(topic => !topics.includes(topic));
+
+    addedTopics.forEach(topic => {
+      if (clientRef.current && clientRef.current.isConnected() && topic != "") {
+        console.log("subscribe: ", topic);
+        clientRef.current.subscribe(topic);
+      }
+    });
+
+    removedTopics.forEach(topic => {
+      if (clientRef.current && clientRef.current.isConnected() && topic != "") {
+        console.log("unsubscribe: ", topic);
+        clientRef.current.unsubscribe(topic);
+      }
+    });
+
+    // 現在のtopicsをpreviousTopicsに保存
+    setPreviousTopics(topics);
+  }, [topics]);
+
+  useEffect(() => {
+    process.nextTick(() => {
+      // localStorageにtopicsを保存
+      const topicsString = topics.join(',');
+      window.localStorage.setItem("topics", topicsString);
+      //console.log("localStorage.set: ", topicsString);
+    });
+  }, [topics]);
+
+
+
+
+
+
+    
   const incrementChatProcessingCount = () => {
     setChatProcessingCount(prevCount => prevCount + 1);
   };
