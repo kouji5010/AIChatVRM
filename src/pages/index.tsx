@@ -10,12 +10,7 @@ import { speakCharacter } from "@/features/messages/speakCharacter";
 import { MessageInputContainer } from "@/components/messageInputContainer";
 import { SYSTEM_PROMPT } from "@/features/constants/systemPromptConstants";
 import { KoeiroParam, DEFAULT_PARAM } from "@/features/constants/koeiroParam";
-import { getOpenAIChatResponseStream } from "@/features/chat/openAiChat";
-import { getAnthropicChatResponseStream } from "@/features/chat/anthropicChat";
-import { getGoogleChatResponseStream } from "@/features/chat/googleChat";
-import { getLocalLLMChatResponseStream } from "@/features/chat/localLLMChat";
-import { getGroqChatResponseStream } from "@/features/chat/groqChat";
-import { getDifyChatResponseStream } from "@/features/chat/difyChat";
+import { AIService, AIServiceConfig, getAIChatResponseStream } from "@/features/chat/aiChatFactory";
 import { Introduction } from "@/components/introduction";
 import { Menu } from "@/components/menu";
 import { Meta } from "@/components/meta";
@@ -42,6 +37,7 @@ export default function Home() {
   const [selectVoice, setSelectVoice] = useState("voicevox");
   const [selectLanguage, setSelectLanguage] = useState("JP");
   const [selectVoiceLanguage, setSelectVoiceLanguage] = useState("ja-JP");
+  const [changeEnglishToJapanese, setChangeEnglishToJapanese] = useState(false);
   const [koeiromapKey, setKoeiromapKey] = useState("");
   const [voicevoxSpeaker, setVoicevoxSpeaker] = useState("2");
   const [googleTtsType, setGoogleTtsType] = useState(process.env.NEXT_PUBLIC_GOOGLE_TTS_TYPE && process.env.NEXT_PUBLIC_GOOGLE_TTS_TYPE !== "" ? process.env.NEXT_PUBLIC_GOOGLE_TTS_TYPE : "");
@@ -236,6 +232,7 @@ export default function Home() {
       setSelectVoice(params.selectVoice || "voicevox");
       setSelectLanguage(params.selectLanguage || "JP");
       setSelectVoiceLanguage(params.selectVoiceLanguage || "ja-JP");
+      setChangeEnglishToJapanese(params.changeEnglishToJapanese || false);
       setKoeiromapKey(params.koeiromapKey || "");
       setVoicevoxSpeaker(params.voicevoxSpeaker || "2");
       setGoogleTtsType(params.googleTtsType || "en-US-Neural2-F");
@@ -252,7 +249,7 @@ export default function Home() {
       setGSVITTSModelID(params.gsviTtsModelId || "");
       setGSVITTSBatchSize(params.gsviTtsBatchSize || 2);
       setGSVITTSSpeechRate(params.gsviTtsSpeechRate || 1.0);
-      setCharacterName(params.characterName || "CHRACTER");
+      setCharacterName(params.characterName || "CHARACTER");
       setShowCharacterName(params.showCharacterName || true);
     }
   }, []);
@@ -276,6 +273,7 @@ export default function Home() {
       selectVoice,
       selectLanguage,
       selectVoiceLanguage,
+      changeEnglishToJapanese,
       koeiromapKey,
       voicevoxSpeaker,
       googleTtsType,
@@ -318,6 +316,7 @@ export default function Home() {
     selectVoice,
     selectLanguage,
     selectVoiceLanguage,
+    changeEnglishToJapanese,
     koeiromapKey,
     voicevoxSpeaker,
     googleTtsType,
@@ -384,6 +383,7 @@ export default function Home() {
         gsviTtsModelId,
         gsviTtsBatchSize,
         gsviTtsSpeechRate,
+        changeEnglishToJapanese,
         onStart,
         onEnd
       );
@@ -401,11 +401,13 @@ export default function Home() {
       gsviTtsServerUrl,
       gsviTtsModelId,
       gsviTtsBatchSize,
-      gsviTtsSpeechRate
+      gsviTtsSpeechRate,
+      changeEnglishToJapanese
     ]
   );
 
   const wsRef = useRef<WebSocket | null>(null);
+
   /**
    * AIからの応答を処理する関数
    * @param currentChatLog ログに残るメッセージの配列
@@ -415,33 +417,27 @@ export default function Home() {
     setChatProcessing(true);
     let stream;
 
-    const _openAiKey = openAiKey && openAiKey !== "" ? openAiKey : process.env.NEXT_PUBLIC_OPEN_AI_KEY || "";
-    const _anthropicKey = anthropicKey && anthropicKey !== "" ? anthropicKey : process.env.NEXT_PUBLIC_ANTHROPIC_KEY || "";
-    const _googleKey = googleKey && googleKey !== "" ? googleKey : process.env.NEXT_PUBLIC_GOOGLE_KEY || "";
-    const _localLlmUrl = localLlmUrl && localLlmUrl !== "" ? localLlmUrl : process.env.NEXT_PUBLIC_LOCAL_LLM_URL || "";
-    const _selectAIModel = selectAIModel && selectAIModel !== "" ? selectAIModel : process.env.NEXT_PUBLIC_LOCAL_LLM_MODEL || "";
-    const _groqKey = groqKey && groqKey !== "" ? groqKey : process.env.NEXT_PUBLIC_GROQ_KEY || "";
-    const _difyKey = difyKey && difyKey !== "" ? difyKey : process.env.NEXT_PUBLIC_DIFY_KEY || "";
-    const _difyUrl = difyUrl && difyUrl !== "" ? difyUrl : process.env.NEXT_PUBLIC_DIFY_URL || "";
+    const aiServiceConfig: AIServiceConfig = {
+      openai: { key: openAiKey || process.env.NEXT_PUBLIC_OPEN_AI_KEY || "", model: selectAIModel },
+      anthropic: { key: anthropicKey || process.env.NEXT_PUBLIC_ANTHROPIC_KEY || "", model: selectAIModel },
+      google: { key: googleKey || process.env.NEXT_PUBLIC_GOOGLE_KEY || "", model: selectAIModel },
+      localLlm: { url: localLlmUrl || process.env.NEXT_PUBLIC_LOCAL_LLM_URL || "", model: selectAIModel || process.env.NEXT_PUBLIC_LOCAL_LLM_MODEL || "" },
+      groq: { key: groqKey || process.env.NEXT_PUBLIC_GROQ_KEY || "", model: selectAIModel },
+      dify: { 
+        key: difyKey || process.env.NEXT_PUBLIC_DIFY_KEY || "", 
+        url: difyUrl || process.env.NEXT_PUBLIC_DIFY_URL || "",
+        conversationId: difyConversationId,
+        setConversationId: setDifyConversationId
+      }
+    };
 
     try {
-      if (selectAIService === "openai") {
-        stream = await getOpenAIChatResponseStream(messages, _openAiKey, selectAIModel);
-      } else if (selectAIService === "anthropic") {
-        stream = await getAnthropicChatResponseStream(messages, _anthropicKey, selectAIModel);
-      } else if (selectAIService === "google") {
-        stream = await getGoogleChatResponseStream(messages, _googleKey, selectAIModel);
-      } else if (selectAIService === "localLlm") {
-        stream = await getLocalLLMChatResponseStream(messages, _localLlmUrl, _selectAIModel);
-      } else if (selectAIService === "groq") {
-        stream = await getGroqChatResponseStream(messages, _groqKey, selectAIModel);
-      } else if (selectAIService === "dify") {
-        stream = await getDifyChatResponseStream(messages, _difyKey, _difyUrl, difyConversationId, setDifyConversationId);
-      }
+      stream = await getAIChatResponseStream(selectAIService as AIService, messages, aiServiceConfig);
     } catch (e) {
       console.error(e);
       stream = null;
     }
+
     if (stream == null) {
       setChatProcessing(false);
       return;
@@ -449,9 +445,11 @@ export default function Home() {
 
     const reader = stream.getReader();
     let receivedMessage = "";
-    let aiTextLog = "";
+    let aiTextLog: Message[] = []; // 会話ログ欄で使用
     let tag = "";
-    const sentences = new Array<string>();
+    let isCodeBlock = false;
+    let codeBlockText = "";
+    const sentences = new Array<string>(); // AssistantMessage欄で使用
     try {
       while (true) {
         const { done, value } = await reader.read();
@@ -459,7 +457,7 @@ export default function Home() {
 
         receivedMessage += value;
 
-        // 返答内容のタグ部分の検出
+        // 返答内容のタグ部分と返答部分を分離
         const tagMatch = receivedMessage.match(/^\[(.*?)\]/);
         if (tagMatch && tagMatch[0]) {
           tag = tagMatch[0];
@@ -467,29 +465,52 @@ export default function Home() {
         }
 
         // 返答を一文単位で切り出して処理する
-        const sentenceMatch = receivedMessage.match(
-          /^(.+[。．！？\n]|.{10,}[、,])/
-        );
-        if (sentenceMatch && sentenceMatch[0]) {
-          const sentence = sentenceMatch[0];
+        const sentenceMatch = receivedMessage.match(/^(.+?[。．.!?！？\n]|.{20,}[、,])/);
+        if (sentenceMatch?.[0]) {
+          let sentence = sentenceMatch[0];
+          // 区切った文字をsentencesに追加
           sentences.push(sentence);
-          receivedMessage = receivedMessage
-            .slice(sentence.length)
-            .trimStart();
+          // 区切った文字の残りでreceivedMessageを更新
+          receivedMessage = receivedMessage.slice(sentence.length).trimStart();
 
           // 発話不要/不可能な文字列だった場合はスキップ
           if (
-            !sentence.replace(
-              /^[\s\[\(\{「［（【『〈《〔｛«‹〘〚〛〙›»〕》〉』】）］」\}\)\]]+$/g,
-              ""
-            )
+            !sentence.replace(/^[\s\[\(\{「［（【『〈《〔｛«‹〘〚〛〙›»〕》〉』】）］」\}\)\]]+$/g, "")
           ) {
             continue;
           }
 
-          const aiText = `${tag} ${sentence}`;
+          // タグと返答を結合（音声再生で使用される）
+          let aiText = `${tag} ${sentence}`;
+
+          if (isCodeBlock && !sentence.includes("```")) {
+            codeBlockText += sentence;
+            continue;
+          }
+
+          if (sentence.includes("```")) {
+            if (isCodeBlock) {
+              // コードブロックの終了処理
+              const [codeEnd, ...restOfSentence] = sentence.split("```");
+              aiTextLog.push({ role: "code", content: codeBlockText + codeEnd });
+              aiText += `${tag} ${restOfSentence.join("```") || ""}`;
+
+              // AssistantMessage欄の更新
+              setAssistantMessage(sentences.join(" "));
+
+              codeBlockText = "";
+              isCodeBlock = false;
+            } else {
+              // コードブロックの開始処理
+              isCodeBlock = true;
+              [aiText, codeBlockText] = aiText.split("```");
+            }
+
+            sentence = sentence.replace(/```/g, "");
+          }
+
           const aiTalks = textsToScreenplay([aiText], koeiroParam);
-          aiTextLog += aiText;
+          aiTextLog.push({ role: "assistant", content: sentence });
 
           // 文ごとに音声を生成 & 再生、返答を表示
           const currentAssistantMessage = sentences.join(" ");
@@ -508,12 +529,18 @@ export default function Home() {
       reader.releaseLock();
     }
 
-    // アシスタントの返答をログに追加
-    const messageLogAssistant: Message[] = [
-      ...currentChatLog,
-      { role: "assistant", content: aiTextLog },
-    ];
-    setChatLog(messageLogAssistant);
+    // 直前のroleと同じならば、contentを結合し、空のcontentを除外する
+    aiTextLog = aiTextLog.reduce((acc: Message[], item: Message) => {
+      const lastItem = acc[acc.length - 1];
+      if (lastItem && lastItem.role === item.role) {
+        lastItem.content += " " + item.content;
+      } else {
+        acc.push({ ...item, content: item.content.trim() });
+      }
+      return acc;
+    }, []).filter(item => item.content !== "");
+
+    setChatLog([...currentChatLog, ...aiTextLog]);
     setChatProcessing(false);
   }, [selectAIService, openAiKey, selectAIModel, anthropicKey, googleKey, localLlmUrl, groqKey, difyKey, difyUrl, difyConversationId, koeiroParam, handleSpeakAi]);
 
@@ -612,12 +639,17 @@ export default function Home() {
         ];
         setChatLog(messageLog);
 
+        const processedMessageLog = messageLog.map(message => ({
+          role: ['assistant', 'user', 'system'].includes(message.role) ? message.role : 'assistant',
+          content: message.content
+        }));
+
         const messages: Message[] = [
           {
             role: "system",
             content: systemPrompt,
           },
-          ...messageLog.slice(-10),
+          ...processedMessageLog.slice(-10),
         ];
 
         try {
@@ -704,7 +736,8 @@ export default function Home() {
     fetchAndProcessComments(
       systemPrompt,
       chatLog,
-      openAiKey,
+      selectAIService === "anthropic" ? anthropicKey : openAiKey,
+      selectAIService,
       selectAIModel,
       youtubeLiveId,
       youtubeApiKey,
@@ -720,27 +753,7 @@ export default function Home() {
       handleSendChat,
       preProcessAIResponse
     );
-  }, [
-    openAiKey,
-    selectAIModel,
-    youtubeLiveId,
-    youtubeApiKey,
-    chatProcessing,
-    chatProcessingCount,
-    systemPrompt,
-    chatLog,
-    youtubeNextPageToken,
-    setYoutubeNextPageToken,
-    youtubeNoCommentCount,
-    setYoutubeNoCommentCount,
-    youtubeContinuationCount,
-    setYoutubeContinuationCount,
-    youtubeSleepMode,
-    setYoutubeSleepMode,
-    conversationContinuityMode,
-    handleSendChat,
-    preProcessAIResponse
-  ]);
+  }, [openAiKey, youtubeLiveId, youtubeApiKey, chatProcessing, chatProcessingCount, systemPrompt, chatLog, selectAIService, anthropicKey, selectAIModel, youtubeNextPageToken, youtubeNoCommentCount, youtubeContinuationCount, youtubeSleepMode, conversationContinuityMode, handleSendChat, preProcessAIResponse]);
 
   useEffect(() => {
     console.log("chatProcessingCount:", chatProcessingCount);
@@ -834,6 +847,8 @@ export default function Home() {
           selectLanguage={selectLanguage}
           setSelectLanguage={setSelectLanguage}
           setSelectVoiceLanguage={setSelectVoiceLanguage}
+          changeEnglishToJapanese={changeEnglishToJapanese}
+          setChangeEnglishToJapanese={setChangeEnglishToJapanese}
           setBackgroundImageUrl={setBackgroundImageUrl}
           gsviTtsServerUrl={gsviTtsServerUrl}
           onChangeGSVITtsServerUrl={setGSVITTSServerUrl}

@@ -71,6 +71,8 @@ type Props = {
   selectLanguage: string;
   setSelectLanguage: (show: string) => void;
   setSelectVoiceLanguage: (show: string) => void;
+  changeEnglishToJapanese: boolean;
+  setChangeEnglishToJapanese: (show: boolean) => void;
   setBackgroundImageUrl: (url: string) => void;
   gsviTtsServerUrl: string;
   onChangeGSVITtsServerUrl: (name: string) => void;
@@ -149,6 +151,8 @@ export const Menu = ({
   selectLanguage,
   setSelectLanguage,
   setSelectVoiceLanguage,
+  changeEnglishToJapanese,
+  setChangeEnglishToJapanese,
   setBackgroundImageUrl,
   gsviTtsServerUrl,
   onChangeGSVITtsServerUrl,
@@ -535,6 +539,8 @@ export const Menu = ({
           selectLanguage = {selectLanguage}
           setSelectLanguage = {setSelectLanguage}
           setSelectVoiceLanguage = {setSelectVoiceLanguage}
+          changeEnglishToJapanese={changeEnglishToJapanese}
+          setChangeEnglishToJapanese={setChangeEnglishToJapanese}
           onClickTestVoice={handleClickTestVoice}
           gsviTtsServerUrl={gsviTtsServerUrl}
           onChangeGSVITtsServerUrl={handleChangeGSVITtsServerUrl}
