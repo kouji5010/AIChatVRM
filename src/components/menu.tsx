@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { IconButton } from "./iconButton";
 import { Message } from "@/features/messages/messages";
 import { KoeiroParam } from "@/features/constants/koeiroParam";
@@ -83,6 +84,10 @@ type Props = {
   onChangeCharacterName: (key: string) => void;
   showCharacterName: boolean;
   onChangeShowCharacterName: (show: boolean) => void;
+  mqttMode: boolean;
+  topics: string[];
+  onChangeMqttMode: (mode: boolean) => void;
+  onChangeTopics: (topics: string[]) => void;
 };
 export const Menu = ({
   selectAIService,
@@ -157,6 +162,10 @@ export const Menu = ({
   onChangeCharacterName,
   showCharacterName,
   onChangeShowCharacterName,
+  mqttMode,
+  topics,
+  onChangeMqttMode,
+  onChangeTopics,
 }: Props) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showChatLog, setShowChatLog] = useState(false);
@@ -164,6 +173,21 @@ export const Menu = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bgFileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
+  const [previousTopics, setPreviousTopics] = useState<string[]>([]);
+  const [tempTopics, setTempTopics] = useState(topics.join(", "));
+
+  useEffect(() => {
+    setTempTopics(topics.join(", "));
+  }, [topics]);
+
+  useEffect(() => {
+    if (mqttMode) {
+      setTempTopics(topics.join(", "));
+    } else {
+        const tempTopiclist = tempTopics.split(',').map(t => t.trim());
+        onChangeTopics(tempTopiclist);
+    }
+  }, [mqttMode]);
 
   const handleChangeAIService = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -309,9 +333,10 @@ export const Menu = ({
       changeWebSocketMode(show);
       if (webSocketMode) {
         onChangeYoutubeMode(false);
+        onChangeMqttMode(false);
       }
     },
-    [changeWebSocketMode, webSocketMode, onChangeYoutubeMode]
+    [changeWebSocketMode, webSocketMode, onChangeYoutubeMode, onChangeMqttMode]
   );
 
   const handleConversationContinuityMode = useCallback(
@@ -406,6 +431,14 @@ export const Menu = ({
     },
     [onChangeShowCharacterName]
   );
+
+  const handleChangeTempTopics = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setTempTopics(event.target.value);
+    },
+    [setTempTopics]
+  );
+
 
   return (
     <>
@@ -515,6 +548,17 @@ export const Menu = ({
           onChangeCharacterName={handleCharacterName}
           showCharacterName={showCharacterName}
           onChangeShowCharacterName={handleShowCharacterName}
+          mqttMode={mqttMode}
+          onChangeMqttMode={onChangeMqttMode}
+          tempTopics={tempTopics}
+          onChangeTempTopics={handleChangeTempTopics}
+          onClickClose={() => {
+            if (showSettings) {
+              const tempTopiclist = tempTopics.split(',').map(t => t.trim());
+              onChangeTopics(tempTopiclist);
+            }
+            setShowSettings(false);
+          }}
         />
       )}
       {!showChatLog && assistantMessage && (

@@ -90,6 +90,10 @@ type Props = {
   onChangeCharacterName: (event: React.ChangeEvent<HTMLInputElement>) => void;
   showCharacterName: boolean;
   onChangeShowCharacterName: (show: boolean) => void;
+  mqttMode: boolean;
+  onChangeMqttMode: (mode: boolean) => void;
+  tempTopics: string;
+  onChangeTempTopics: (event: React.ChangeEvent<HTMLInputElement>) => void;
 };
 export const Settings = ({
   selectAIService,
@@ -165,6 +169,10 @@ export const Settings = ({
   onChangeCharacterName,
   showCharacterName,
   onChangeShowCharacterName,
+  mqttMode,
+  onChangeMqttMode,
+  tempTopics,
+  onChangeTempTopics,
 }: Props) => {
   const { t } = useTranslation();
 
@@ -582,6 +590,41 @@ export const Settings = ({
                       })()}
                     </div>
                   </div>
+                  <div className="my-40">
+                    <div className="my-16 typography-20 font-bold">
+                      {t('MQTTmode')}
+                    </div>
+                    <div className="my-8">
+                      {mqttMode ? (
+                        <TextButton onClick={() => onChangeMqttMode(false)}>
+                          {t('StatusOn')}
+                        </TextButton>
+                      ) : (
+                        <TextButton onClick={() => onChangeMqttMode(true)}>
+                          {t('StatusOff')}
+                        </TextButton>
+                      )}
+                    </div>
+                    <div className="my-16">
+                      {(() => {
+                        if (mqttMode) {
+                          return (
+                            <>
+                              <div className="">{t('topicはカンマ区切りで複数指定可。メニューを閉じると反映されます。')}</div>
+                              <div className="my-16 typography-20 font-bold">{t('MQTTtopic')}</div>
+                              <input
+                                className="text-ellipsis px-16 py-8 w-col-span-2 bg-surface1 hover:bg-surface1-hover rounded-8"
+                                type="text"
+                                placeholder="..."
+                                value={tempTopics}
+                                onChange={onChangeTempTopics} />
+                            </>
+                          );
+                        }
+                      })()}
+                    </div>
+                  </div>
+
                   <div className="my-40">
                     <div className="my-8">
                       <div className="my-16 typography-20 font-bold">
