@@ -256,8 +256,8 @@ export default function Home() {
       setGSVITTSModelID(params.gsviTtsModelId || "");
       setGSVITTSBatchSize(params.gsviTtsBatchSize || 2);
       setGSVITTSSpeechRate(params.gsviTtsSpeechRate || 1.0);
-      setStartWords(params.startWords || "");
-      setEndWords(params.endWords || "");
+      setStartWords(params.startWords || []);
+      setEndWords(params.endWords || []);
       setCharacterName(params.characterName || "CHARACTER");
       setShowCharacterName(params.showCharacterName || true);
     }
