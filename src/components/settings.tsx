@@ -96,6 +96,12 @@ type Props = {
   onChangeMqttMode: (mode: boolean) => void;
   tempTopics: string;
   onChangeTempTopics: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  mqttBrokerUrl: string;
+  onChangeMqttBrokerUrl: (url: string) => void;
+  tempStartWords: string[];
+  onChangeTempStartWords: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  tempEndWords: string[];
+  onChangeTempEndWords: (event: React.ChangeEvent<HTMLInputElement>) => void;
 };
 export const Settings = ({
   selectAIService,
@@ -177,6 +183,12 @@ export const Settings = ({
   onChangeMqttMode,
   tempTopics,
   onChangeTempTopics,
+  mqttBrokerUrl,
+  onChangeMqttBrokerUrl,
+  tempStartWords,
+  onChangeTempStartWords,
+  tempEndWords,
+  onChangeTempEndWords,
 }: Props) => {
   const { t } = useTranslation();
 
@@ -614,6 +626,13 @@ export const Settings = ({
                         if (mqttMode) {
                           return (
                             <>
+                              <div className="my-16 typography-20 font-bold">{t('MQTTBlokerURL')}</div>
+                              <input
+                                className="text-ellipsis px-16 py-8 w-full bg-surface1 hover:bg-surface1-hover rounded-8"
+                                type="text"
+                                placeholder="..."
+                                value={mqttBrokerUrl}
+                                onChange={onChangeMqttBrokerUrl} />
                               <div className="">{t('topicはカンマ区切りで複数指定可。メニューを閉じると反映されます。')}</div>
                               <div className="my-16 typography-20 font-bold">{t('MQTTtopic')}</div>
                               <input
@@ -628,7 +647,32 @@ export const Settings = ({
                       })()}
                     </div>
                   </div>
-
+                  <div className="my-40">
+                    <div className="my-8">
+                      <div className="my-16 typography-20 font-bold">
+                        {t('StartWord')}
+                      </div>
+                    </div>
+                    <input
+                      className="text-ellipsis px-16 py-8 w-col-span-4 bg-surface1 hover:bg-surface1-hover rounded-8"
+                      type="text"
+                      placeholder="..."
+                      value={tempStartWords}
+                      onChange={onChangeTempStartWords} />
+                  </div>
+                  <div className="my-40">
+                    <div className="my-8">
+                      <div className="my-16 typography-20 font-bold">
+                        {t('EndWord')}
+                      </div>
+                    </div>
+                    <input
+                      className="text-ellipsis px-16 py-8 w-col-span-4 bg-surface1 hover:bg-surface1-hover rounded-8"
+                      type="text"
+                      placeholder="..."
+                      value={tempEndWords}
+                      onChange={onChangeTempEndWords} />
+                  </div>
                   <div className="my-40">
                     <div className="my-8">
                       <div className="my-16 typography-20 font-bold">

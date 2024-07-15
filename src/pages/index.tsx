@@ -75,11 +75,16 @@ export default function Home() {
 
   const [mqttMode, setMqttMode] = useState(true);
   const [mqttBrokerUrl, setMqttBrokerUrl] = useState(process.env.NEXT_PUBLIC_MQTT_URL && process.env.NEXT_PUBLIC_MQTT_URL !== "" ? process.env.NEXT_PUBLIC_MQTT_URL : "wss://127.0.0.1:9001/mqtt");
-  const [topics, setTopics] = useState(process.env.NEXT_PUBLIC_MQTT_TOPIC && process.env.NEXT_PUBLIC_MQTT_TOPIC !== "" ? JSON.parse(process.env.NEXT_PUBLIC_MQTT_TOPIC) : ["all","main"]);
+  const [topics, setTopics] = useState(process.env.NEXT_PUBLIC_MQTT_TOPIC && process.env.NEXT_PUBLIC_MQTT_TOPIC !== "" ? JSON.parse(process.env.NEXT_PUBLIC_MQTT_TOPIC) : "");
+  const [startWords, setStartWords] = useState(process.env.NEXT_PUBLIC_START_WORDS && process.env.NEXT_PUBLIC_START_WORDS !== "" ? JSON.parse(process.env.NEXT_PUBLIC_START_WORDS) : ["おはよう","こんにちは","こんばんは"]);
+  const [endWords, setEndWords] = useState(process.env.NEXT_PUBLIC_END_WORDS && process.env.NEXT_PUBLIC_END_WORDS !== "" ? JSON.parse(process.env.NEXT_PUBLIC_END_WORDS) : ["ありがとう","さようなら"]);
   const [previousTopics, setPreviousTopics] = useState<string[]>([]);
   const clientRef = useRef<Client | null>(null);
-  const topicsRef = useRef<string[]>([]);
-  const isLocalStorageLoadedRef = useRef(false);
+  const [mqttLocalStorageLoad, setMqttLocalStorageLoad] = useState(false);
+  const [mqttConnected, setMqttConnected] = useState(false);
+
+  const [recognitionTrigger, setRecognitionTrigger] = useState(0);
+  const [autoRecognition, setAutoRecognition] = useState(false);
 
   useEffect(() => {
     const clientId = 'ClientID' + Date.now();
@@ -97,9 +102,9 @@ export default function Home() {
       // メッセージに基づく処理をここで実装
       const text = message.payloadString;
       if (text === "start_conversation") {
-        setIsConversationActive(true);
+        setAutoRecognition(true);
       } else if (text === "stop_conversation") {
-        setIsConversationActive(false);
+        setAutoRecognition(false);
       } else if (text === "wake") {
         setRecognitionTrigger(prev => prev + 1);
       } else {
@@ -114,20 +119,12 @@ export default function Home() {
     const connectClient = () => {
       clientRef.current.connect({
         onSuccess: () => {
-          console.log('MQTT client connected', topicsRef.current);
-          // localStorageからの読み込みが完了していれば、その時点でのtopicsの値を使用して購読処理を行う
-          if (isLocalStorageLoadedRef.current) {
-            topicsRef.current.forEach(topic => {
-              if (clientRef.current &&  topic != "") {
-                console.log("subscribe: ", topic);
-                clientRef.current.subscribe(topic);
-              }
-            });
-          }
-
+          console.log('MQTT client connected', topics);
+          setMqttConnected(true);
         },
         onFailure: (error) => {
           console.log('MQTT connection failed: ' + error.errorMessage);
+          setMqttConnected(false);
         },
         keepAliveInterval: 30
       });
@@ -135,74 +132,84 @@ export default function Home() {
 
     const disconnectClient = () => {
       if (clientRef.current && clientRef.current.isConnected()) {
-        console.log("topics: ", topics);
         clientRef.current.disconnect();
         console.log('MQTT client disconnected');
+        setMqttConnected(false);
       }
     };
 
     // mqttMode の状態に応じて接続または切断
-    if (mqttMode) {
-      topicsRef.current = topics;
-      connectClient();
-    } else {
-      disconnectClient();
+    if(mqttLocalStorageLoad) {
+      if (mqttMode) {
+        connectClient();
+      } else {
+        disconnectClient();
+      }
     }
 
     return () => {
       disconnectClient(); // コンポーネントのアンマウント時に切断
     };
-  }, [mqttMode]);
+  }, [mqttLocalStorageLoad, mqttMode]);
 
+  //初回起動時
   useEffect(() => {
-    // topicsの初期値をlocalStorageから取得して更新
-    if(window.localStorage.getItem("topics")){
-      const stored = localStorage.getItem('topics');
-      if (stored) {
-        const loadedTopics = stored.split(',').map(topic => topic.trim());
-        if (JSON.stringify(loadedTopics) !== JSON.stringify(topics)) {
-          setTopics(loadedTopics);
-          topicsRef.current = loadedTopics;  // ここでtopicsRefを更新
-        }
-        setPreviousTopics(loadedTopics);
-        isLocalStorageLoadedRef.current = true;
-      }
+    const storedData = window.localStorage.getItem("MQTTParams");
+    if (storedData) {
+      const params = JSON.parse(storedData);
+      setMqttMode(params.mqttMode ?? true); //undifinedはTrueとして評価されるため??を使用
+      setMqttBrokerUrl(params.mqttBrokerUrl || "");
+      setTopics(params.topics || []);
     }
+    setMqttLocalStorageLoad(true);
   }, []);
 
+  useEffect(() => {
+    if(mqttConnected) {
+      // topicsの変更を検知して、購読の追加・解除を行う
+      const addedTopics = topics.filter(topic => !previousTopics.includes(topic));
+      const removedTopics = previousTopics.filter(topic => !topics.includes(topic));
+
+      addedTopics.forEach(topic => {
+        if (clientRef.current && clientRef.current.isConnected() && topic != "") {
+          console.log("subscribe: ", topic);
+          clientRef.current.subscribe(topic);
+        }
+      });
+
+      removedTopics.forEach(topic => {
+        if (clientRef.current && clientRef.current.isConnected() && topic != "") {
+          console.log("unsubscribe: ", topic);
+          clientRef.current.unsubscribe(topic);
+        }
+      });
+
+      // 現在のtopicsをpreviousTopicsに保存
+      setPreviousTopics(topics);
+    }
+  }, [mqttConnected, topics]);
 
   useEffect(() => {
-    // topicsの変更を検知して、購読の追加・解除を行う
-    const addedTopics = topics.filter(topic => !previousTopics.includes(topic));
-    const removedTopics = previousTopics.filter(topic => !topics.includes(topic));
+    if(mqttLocalStorageLoad) {
+      const params = {
+        mqttMode,
+        mqttBrokerUrl,
+        topics
+      };
 
-    addedTopics.forEach(topic => {
-      if (clientRef.current && clientRef.current.isConnected() && topic != "") {
-        console.log("subscribe: ", topic);
-        clientRef.current.subscribe(topic);
+      if (paramsChanged(params)) {  // 状態が実際に変更されたか確認
+        process.nextTick(() =>
+          window.localStorage.setItem("MQTTParams", JSON.stringify(params))
+        );
       }
-    });
+    }
+  }, [mqttLocalStorageLoad, mqttMode, mqttBrokerUrl, topics]);
 
-    removedTopics.forEach(topic => {
-      if (clientRef.current && clientRef.current.isConnected() && topic != "") {
-        console.log("unsubscribe: ", topic);
-        clientRef.current.unsubscribe(topic);
-      }
-    });
+  const paramsChanged = (newParams) => {
+    const savedParams = window.localStorage.getItem("MQTTParams");
+    return JSON.stringify(newParams) !== savedParams;
+  };
 
-    // 現在のtopicsをpreviousTopicsに保存
-    setPreviousTopics(topics);
-  }, [topics]);
-
-  useEffect(() => {
-    process.nextTick(() => {
-      // localStorageにtopicsを保存
-      const topicsString = topics.join(',');
-      window.localStorage.setItem("topics", topicsString);
-      //console.log("localStorage.set: ", topicsString);
-    });
-  }, [topics]);
-    
   const incrementChatProcessingCount = () => {
     setChatProcessingCount(prevCount => prevCount + 1);
   };
@@ -249,6 +256,8 @@ export default function Home() {
       setGSVITTSModelID(params.gsviTtsModelId || "");
       setGSVITTSBatchSize(params.gsviTtsBatchSize || 2);
       setGSVITTSSpeechRate(params.gsviTtsSpeechRate || 1.0);
+      setStartWords(params.startWords || "");
+      setEndWords(params.endWords || "");
       setCharacterName(params.characterName || "CHARACTER");
       setShowCharacterName(params.showCharacterName || true);
     }
@@ -290,6 +299,8 @@ export default function Home() {
       gsviTtsModelId,
       gsviTtsBatchSize,
       gsviTtsSpeechRate,
+      startWords,
+      endWords,
       characterName,
       showCharacterName
     };
@@ -333,6 +344,8 @@ export default function Home() {
     gsviTtsModelId,
     gsviTtsBatchSize,
     gsviTtsSpeechRate,
+    startWords,
+    endWords,
     characterName,
     showCharacterName
   ]);
@@ -657,7 +670,16 @@ export default function Home() {
         } catch (e) {
           console.error(e);
         }
-  
+
+
+        //自動応答開始終了処理
+        console.log("startWords:", startWords);
+        if(startWords.some(word => newMessage.includes(word))) {
+            setAutoRecognition(true);
+        }
+        if(endWords.some(word => newMessage.includes(word))) {
+            setAutoRecognition(false);
+        }
         setChatProcessing(false);
       }
     },
@@ -785,6 +807,10 @@ export default function Home() {
         <MessageInputContainer
           isChatProcessing={chatProcessing}
           onChatProcessStart={handleSendChat}
+          recognitionTrigger={recognitionTrigger}
+          onChangerecognitionTrigger={setRecognitionTrigger}
+          chatProcessingCount={chatProcessingCount}
+          autoRecognition={autoRecognition}
           selectVoiceLanguage={selectVoiceLanguage}
         />
         <Menu
@@ -866,6 +892,12 @@ export default function Home() {
           topics={topics}
           onChangeMqttMode={setMqttMode}
           onChangeTopics={setTopics}
+          mqttBrokerUrl={mqttBrokerUrl}
+          onChangeMqttBrokerUrl={setMqttBrokerUrl}
+          startWords={startWords}
+          onChangeStartWords={setStartWords}
+          endWords={endWords}
+          onChangeEndWords={setEndWords}
         />
       </div>
     </>

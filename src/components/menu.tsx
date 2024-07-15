@@ -90,6 +90,12 @@ type Props = {
   topics: string[];
   onChangeMqttMode: (mode: boolean) => void;
   onChangeTopics: (topics: string[]) => void;
+  mqttBrokerUrl: string;
+  onChangeMqttBrokerUrl: (url: string) => void;
+  startWords: string[];
+  onChangeStartWords: (words: string[]) => void;
+  endWords: string[];
+  onChangeEndWords: (words: string[]) => void;
 };
 export const Menu = ({
   selectAIService,
@@ -170,6 +176,12 @@ export const Menu = ({
   topics,
   onChangeMqttMode,
   onChangeTopics,
+  mqttBrokerUrl,
+  onChangeMqttBrokerUrl,
+  startWords,
+  onChangeStartWords,
+  endWords,
+  onChangeEndWords,
 }: Props) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showChatLog, setShowChatLog] = useState(false);
@@ -179,19 +191,21 @@ export const Menu = ({
   const { t } = useTranslation();
   const [previousTopics, setPreviousTopics] = useState<string[]>([]);
   const [tempTopics, setTempTopics] = useState(topics.join(", "));
+  const [tempStartWords, setTempStartWords] = useState(startWords.join(", "));
+  const [tempEndWords, setTempEndWords] = useState(endWords.join(", "));
 
   useEffect(() => {
     setTempTopics(topics.join(", "));
   }, [topics]);
 
+
   useEffect(() => {
-    if (mqttMode) {
-      setTempTopics(topics.join(", "));
-    } else {
-        const tempTopiclist = tempTopics.split(',').map(t => t.trim());
-        onChangeTopics(tempTopiclist);
-    }
-  }, [mqttMode]);
+    setTempStartWords(startWords.join(", "));
+  }, [startWords]);
+
+  useEffect(() => {
+    setTempEndWords(endWords.join(", "));
+  }, [endWords]);
 
   const handleChangeAIService = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -436,6 +450,13 @@ export const Menu = ({
     [onChangeShowCharacterName]
   );
 
+  const handleChangeMqttBrokerUrl = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      onChangeMqttBrokerUrl(event.target.value);
+    },
+    [onChangeMqttBrokerUrl]
+  );
+
   const handleChangeTempTopics = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       setTempTopics(event.target.value);
@@ -443,6 +464,19 @@ export const Menu = ({
     [setTempTopics]
   );
 
+  const handleChangeTempStartWords = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setTempStartWords(event.target.value);
+    },
+    [setTempStartWords]
+  );
+
+  const handleChangeTempEndWords = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setTempEndWords(event.target.value);
+    },
+    [setTempEndWords]
+  );
 
   return (
     <>
@@ -558,10 +592,20 @@ export const Menu = ({
           onChangeMqttMode={onChangeMqttMode}
           tempTopics={tempTopics}
           onChangeTempTopics={handleChangeTempTopics}
+          mqttBrokerUrl={mqttBrokerUrl}
+          onChangeMqttBrokerUrl={handleChangeMqttBrokerUrl}
+          tempStartWords={tempStartWords}
+          onChangeTempStartWords={handleChangeTempStartWords}
+          tempEndWords={tempEndWords}
+          onChangeTempEndWords={handleChangeTempEndWords}
           onClickClose={() => {
             if (showSettings) {
               const tempTopiclist = tempTopics.split(',').map(t => t.trim());
               onChangeTopics(tempTopiclist);
+              const tempStartWordslist = tempStartWords.split(',').map(t => t.trim());
+              onChangeStartWords(tempStartWordslist);
+              const tempEndWordslist = tempEndWords.split(',').map(t => t.trim());
+              onChangeEndWords(tempEndWordslist);
             }
             setShowSettings(false);
           }}

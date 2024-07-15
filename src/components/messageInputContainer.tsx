@@ -16,6 +16,10 @@ type Props = {
 export const MessageInputContainer = ({
   isChatProcessing,
   onChatProcessStart,
+  recognitionTrigger,
+  onChangerecognitionTrigger,
+  chatProcessingCount,
+  autoRecognition,
   selectVoiceLanguage
 }: Props) => {
   const [userMessage, setUserMessage] = useState("");
@@ -59,6 +63,22 @@ export const MessageInputContainer = ({
   const handleClickSendButton = useCallback(() => {
     onChatProcessStart(userMessage);
   }, [onChatProcessStart, userMessage]);
+
+  //自動会話開始
+  useEffect(() => {
+    if (recognitionTrigger > 0 && !isMicRecording && !isChatProcessing && chatProcessingCount == 0) {
+      speechRecognition?.start();
+      setIsMicRecording(true);
+    }
+
+  }, [recognitionTrigger]);
+
+  //継続会話
+  useEffect(() => {
+    if (autoRecognition && !isMicRecording && !isChatProcessing && chatProcessingCount == 0) {
+      onChangerecognitionTrigger(prev => prev + 1);
+    }
+  }, [autoRecognition, chatProcessingCount]);
 
   useEffect(() => {
     const SpeechRecognition =
