@@ -12,6 +12,7 @@ import {
 import { MessageInputContainer } from './messageInputContainer'
 import useWebSocket from './useWebSocket'
 import useYoutube from './useYoutube'
+import useMqtt from './useMqtt'
 import { SlideText } from './slideText'
 
 export const Form = () => {
@@ -33,6 +34,7 @@ export const Form = () => {
 
   useYoutube({ handleSendChat })
   useWebSocket({ handleReceiveTextFromWs })
+  useMqtt({ handleReceiveTextFromWs })
 
   useEffect(() => {
     // テキストと画像がそろったら、チャットを送信

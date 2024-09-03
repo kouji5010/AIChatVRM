@@ -546,7 +546,7 @@ export const handleReceiveTextFromWsFn =
     const ss = settingsStore.getState()
     const hs = homeStore.getState()
 
-    if (!ss.webSocketMode) {
+    if (!ss.mqttMode && !ss.webSocketMode) {
       console.log('websocket mode: false')
       return
     }

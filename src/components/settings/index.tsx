@@ -13,6 +13,7 @@ import ModelProvider from './modelProvider'
 import Voice from './voice'
 import WebSocket from './websocket'
 import YouTube from './youtube'
+import Mqtt from './mqtt'
 import Slide from './slide'
 
 type Props = {
@@ -71,6 +72,15 @@ const Main = () => {
 
           {/* AI設定 */}
           <ModelProvider />
+        </div>
+
+        <div className="my-24 typography-32 font-bold">
+          {t('MqttSettings')}
+        </div>
+
+        <div className="my-40">
+          {/* Mqtt設定 */}
+          <Mqtt />
         </div>
 
         <div className="my-24 typography-32 font-bold">
