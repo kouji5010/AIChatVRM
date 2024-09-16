@@ -54,8 +54,7 @@ const useMqtt = ({ handleReceiveTextFromWs }: Params) => {
   useEffect(() => {
     const ss = settingsStore.getState()
     const hs = homeStore.getState()
-    if (!ss.mqttMode) return
-    if (!ss.mqttUrl) return;
+    if (!ss.mqttMode || !ss.mqttUrl) return;
 
     const topics = mqttTopic
       .split(',')
@@ -71,19 +70,18 @@ const useMqtt = ({ handleReceiveTextFromWs }: Params) => {
     };
     const client = mqtt.connect(mqttUrl, connectOptions);
 
-    client.on('connect', () => {
-      console.log('MQTT connection opened')
-      if (topics.length > 0) {
-        client.subscribe(topics, (err) => {
-          if (err) {
-            console.error('Subscription error:', err)
-          } else {
-            console.log('Subscribed to topics:', topics)
-          }
-        })
-      }
-    })
+    const handleConnect = () => {
+      console.log('MQTT connection opened');
+      client.subscribe(topics, (err) => {
+        if (err) {
+          console.error('Subscription error:', err);
+        } else {
+          console.log('Subscribed to topics:', topics);
+        }
+      });
+    };
 
+    client.on('connect', handleConnect);
     client.on('message', (topic, message) => {
       console.log(`Received message on topic ${topic}:`, message.toString())
       try {
@@ -123,6 +121,7 @@ const useMqtt = ({ handleReceiveTextFromWs }: Params) => {
     homeStore.setState({ mqttClient: client })
 
     return () => {
+      client.removeListener('connect', handleConnect);
       client.end()
       homeStore.setState({ mqttClient: null })
     }
