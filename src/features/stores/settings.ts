@@ -80,6 +80,9 @@ interface General {
   changeEnglishToJapanese: boolean
   webSocketMode: boolean
   slideMode: boolean
+  mqttMode: boolean
+  mqttUrl: string
+  mqttTopic: string
 }
 
 export type SettingsState = APIKeys &
@@ -153,6 +156,10 @@ const settingsStore = create<SettingsState>()(
       changeEnglishToJapanese: false,
       webSocketMode: false,
       slideMode: false,
+      mqttMode: true,
+      mqttUrl:
+        process.env.NEXT_PUBLIC_MQTT_URL || 'ws://localhost:9001',
+      mqttTopic: process.env.NEXT_PUBLIC_MQTT_TOPIC || 'all',
     }),
     {
       name: 'aitube-kit-settings',
@@ -202,6 +209,9 @@ const settingsStore = create<SettingsState>()(
         changeEnglishToJapanese: state.changeEnglishToJapanese,
         webSocketMode: state.webSocketMode,
         slideMode: state.slideMode,
+        mqttMode: state.mqttMode,
+        mqttUrl: state.mqttUrl,
+        mqttTopic: state.mqttTopic,
       }),
     }
   )

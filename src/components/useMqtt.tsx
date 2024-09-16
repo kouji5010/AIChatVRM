@@ -3,6 +3,7 @@ import mqtt from 'mqtt'
 
 import homeStore from '@/features/stores/home'
 import settingsStore from '@/features/stores/settings'
+import MessageInputContainer from './MessageInputContainer'
 
 /// 取得したコメントをストックするリストの作成（tmpMessages）
 interface TmpMessage {
@@ -52,6 +53,7 @@ const useMqtt = ({ handleReceiveTextFromWs }: Params) => {
   // MQTT接続の設定
   useEffect(() => {
     const ss = settingsStore.getState()
+    const hs = homeStore.getState()
     if (!ss.mqttMode) return
     if (!ss.mqttUrl) return;
 
@@ -90,10 +92,23 @@ const useMqtt = ({ handleReceiveTextFromWs }: Params) => {
       } catch (e) {
         //console.error('Failed to parse message as JSON:', e)
         // JSONでないメッセージをそのまま使う場合
-        setTmpMessages((prevMessages) => [
-          ...prevMessages,
-          { text: message.toString(), role: 'assistant', emotion: 'neutral', state: 'end' },
-        ])
+        if (message.toString() === "start_conversation") {
+          //自動会話開始
+            console.log("start_conversation")
+            homeStore.setState({ autoRecognition: true })
+        } else if (message.toString() === "stop_conversation") {
+        //自動会話終了
+            homeStore.setState({ autoRecognition: false })
+        } else if (message.toString() === "wake") {
+        //音声認識開始
+            homeStore.setState({ startRecognition: true })
+        } else {
+        //その他
+          setTmpMessages((prevMessages) => [
+            ...prevMessages,
+            { text: message.toString(), role: 'assistant', emotion: 'neutral', state: 'end' },
+          ])
+        }
       }
     })
 
@@ -111,7 +126,7 @@ const useMqtt = ({ handleReceiveTextFromWs }: Params) => {
       client.end()
       homeStore.setState({ mqttClient: null })
     }
-  }, [mqttMode])
+  }, [mqttMode, mqttUrl, mqttTopic])
 
   return null
 }
