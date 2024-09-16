@@ -157,9 +157,8 @@ const settingsStore = create<SettingsState>()(
       webSocketMode: false,
       slideMode: false,
       mqttMode: true,
-      mqttUrl:
-        process.env.NEXT_PUBLIC_MQTT_URL || 'ws://localhost:9001',
-      mqttTopic: process.env.NEXT_PUBLIC_MQTT_TOPIC || 'all',
+      mqttUrl: process.env.NEXT_PUBLIC_MQTT_URL || 'ws://localhost:9001',
+      mqttTopic: process.env.NEXT_PUBLIC_MQTT_TOPIC || 'all, main',
     }),
     {
       name: 'aitube-kit-settings',
