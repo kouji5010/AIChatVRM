@@ -83,6 +83,8 @@ interface General {
   mqttMode: boolean
   mqttUrl: string
   mqttTopic: string
+  startWords: string
+  endWords: string
 }
 
 export type SettingsState = APIKeys &
@@ -159,6 +161,10 @@ const settingsStore = create<SettingsState>()(
       mqttMode: true,
       mqttUrl: process.env.NEXT_PUBLIC_MQTT_URL || 'ws://localhost:9001',
       mqttTopic: process.env.NEXT_PUBLIC_MQTT_TOPIC || 'all, main',
+
+      //KeyWords
+      startWords: '',
+      endWords: '',
     }),
     {
       name: 'aitube-kit-settings',

@@ -504,6 +504,23 @@ export const handleSendChatFn =
       }
       homeStore.setState({ chatLog: messageLog })
 
+      //自動応答開始終了処理
+      const startWords = ss.startWords
+        .split(',')
+        .map((word) => word.trim()) // 空白を削除
+        .filter((word) => word !== "") // 空の単語を除外
+      const endWords = ss.endWords
+        .split(',')
+        .map((word) => word.trim()) // 空白を削除
+        .filter((word) => word !== "") // 空の単語を除外
+
+      if(startWords.some(word => newMessage.includes(word))) {
+        homeStore.setState({ autoRecognition: true })
+      }
+      else if(endWords.some(word => newMessage.includes(word))) {
+        homeStore.setState({ autoRecognition: false })
+      }
+
       // TODO: AIに送信するメッセージの加工、処理がひどいので要修正
       // 画像は直近のものしか送らない
       const processedMessageLog = messageLog.map((message, index) => ({
