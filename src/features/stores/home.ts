@@ -7,7 +7,7 @@ import { Viewer } from '../vrmViewer/viewer'
 export interface PersistedState {
   userOnboarded: boolean
   chatLog: Message[]
-  dontShowIntroduction: boolean
+  showIntroduction: boolean
 }
 
 export interface TransientState {
@@ -37,7 +37,7 @@ const homeStore = create<HomeState>()(
       // persisted states
       userOnboarded: false,
       chatLog: [],
-      dontShowIntroduction: false,
+      showIntroduction: process.env.NEXT_PUBLIC_SHOW_INTRODUCTION !== 'false',
       assistantMessage: '',
 
       // transient states
@@ -68,7 +68,7 @@ const homeStore = create<HomeState>()(
     }),
     {
       name: 'aitube-kit-home',
-      partialize: ({ chatLog, dontShowIntroduction }) => ({
+      partialize: ({ chatLog, showIntroduction }) => ({
         chatLog: chatLog.map((message: Message) => ({
           ...message,
           content:
@@ -76,7 +76,7 @@ const homeStore = create<HomeState>()(
               ? message.content
               : message.content[0].text,
         })),
-        dontShowIntroduction,
+        showIntroduction,
       }),
     }
   )
